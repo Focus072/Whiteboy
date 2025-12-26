@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { getDashboardStats, type ApiResponse } from '@/lib/api';
 import Link from 'next/link';
 
@@ -38,27 +38,27 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    const loadStats = async () => {
-      try {
-        const response = await getDashboardStats();
-        if (response.success && response.data) {
-          setStats(response.data);
-        } else {
-          setError(response.error?.message || 'Failed to load dashboard stats');
-        }
-      } catch (err) {
-        setError('Network error. Please try again.');
-      } finally {
-        setLoading(false);
+  const loadStats = useCallback(async () => {
+    try {
+      const response = await getDashboardStats();
+      if (response.success && response.data) {
+        setStats(response.data);
+      } else {
+        setError(response.error?.message || 'Failed to load dashboard stats');
       }
-    };
+    } catch (err) {
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
+  useEffect(() => {
     loadStats();
     // Refresh every 30 seconds
     const interval = setInterval(loadStats, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [loadStats]);
 
   if (loading) {
     return (

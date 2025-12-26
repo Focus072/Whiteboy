@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getOrders, type ApiResponse } from '@/lib/api';
@@ -31,7 +31,7 @@ export default function OrdersPage() {
   const [endDate, setEndDate] = useState('');
   const [total, setTotal] = useState(0);
 
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -54,11 +54,11 @@ export default function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter, selectedStatuses, searchQuery, startDate, endDate]);
 
   useEffect(() => {
     loadOrders();
-  }, [statusFilter, selectedStatuses, startDate, endDate]);
+  }, [loadOrders]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

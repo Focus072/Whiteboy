@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { getOrder, logStakeCall, shipOrder, type ApiResponse } from '@/lib/api';
@@ -67,7 +67,8 @@ export default function OrderDetailPage() {
   const [actionError, setActionError] = useState('');
   const [stakeNotes, setStakeNotes] = useState('');
 
-  const loadOrder = async () => {
+  const loadOrder = useCallback(async () => {
+    if (!orderId) return;
     setLoading(true);
     setError('');
     try {
@@ -83,13 +84,11 @@ export default function OrderDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [orderId]);
 
   useEffect(() => {
-    if (orderId) {
-      loadOrder();
-    }
-  }, [orderId]);
+    loadOrder();
+  }, [loadOrder]);
 
   const handleStakeCall = async (e: React.FormEvent) => {
     e.preventDefault();

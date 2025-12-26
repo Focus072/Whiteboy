@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { getAuditEvents, type ApiResponse } from '@/lib/api';
 
 interface AuditEvent {
@@ -24,7 +24,7 @@ export default function AuditPage() {
   const [total, setTotal] = useState(0);
   const pageSize = 50;
 
-  const loadEvents = async () => {
+  const loadEvents = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -41,11 +41,11 @@ export default function AuditPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, pageSize]);
 
   useEffect(() => {
     loadEvents();
-  }, [page]);
+  }, [loadEvents]);
 
   const getResultColor = (result: string) => {
     switch (result) {

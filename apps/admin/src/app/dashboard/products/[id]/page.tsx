@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { getProduct, updateProduct, presignFileUpload, updateProductImage, type ApiResponse } from '@/lib/api';
 
 interface Product {
@@ -340,11 +341,13 @@ export default function EditProductPage() {
               Product Image
             </label>
             {formData.imageUrl && (
-              <div className="mb-2">
-                <img
+              <div className="mb-2 relative w-32 h-32">
+                <Image
                   src={formData.imageUrl}
                   alt="Product"
-                  className="w-32 h-32 object-cover rounded-md"
+                  fill
+                  className="object-cover rounded-md"
+                  unoptimized
                 />
               </div>
             )}

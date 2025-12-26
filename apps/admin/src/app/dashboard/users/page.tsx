@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { getUsers, deleteUser, type ApiResponse } from '@/lib/api';
 
@@ -22,7 +22,7 @@ export default function UsersPage() {
   const [page, setPage] = useState(1);
   const pageSize = 50;
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -44,11 +44,11 @@ export default function UsersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, pageSize, searchQuery, roleFilter]);
 
   useEffect(() => {
     loadUsers();
-  }, [page, roleFilter]);
+  }, [loadUsers]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { getProducts, deleteProduct, type ApiResponse } from '@/lib/api';
 
@@ -28,7 +28,7 @@ export default function ProductsPage() {
   const [page, setPage] = useState(1);
   const pageSize = 50;
 
-  const loadProducts = async () => {
+  const loadProducts = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -50,11 +50,11 @@ export default function ProductsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, pageSize, searchQuery, activeFilter]);
 
   useEffect(() => {
     loadProducts();
-  }, [page, activeFilter]);
+  }, [loadProducts]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
