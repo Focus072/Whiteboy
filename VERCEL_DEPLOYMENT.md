@@ -1,10 +1,66 @@
 # Vercel Deployment Configuration
 
-## ⚠️ IMPORTANT: Root Directory Must Be Set
+## 🔴 Root Cause Analysis
 
-**You MUST configure the Root Directory in Vercel dashboard settings for each project.**
+**Why the "No Output Directory named 'public' found" error occurs:**
 
-If you see the error: `No Output Directory named "public" found`, it means Vercel is trying to build from the repository root instead of the app directory.
+Vercel successfully builds everything:
+- ✅ Prisma generates
+- ✅ pnpm installs dependencies
+- ✅ TypeScript compiles
+- ✅ Next.js apps build
+- ✅ All monorepo packages build
+
+**But then Vercel asks: "Where's the deployable output?"**
+
+When Vercel can't determine the framework output, it:
+1. Assumes **Static Site** deployment
+2. Looks for a `public/` directory at the project root
+3. Doesn't find one (because Next.js outputs to `.next/`)
+4. ❌ **Fails**
+
+This happens when:
+- Root Directory is not configured in Vercel dashboard
+- Vercel tries to build from repository root (`/`)
+- No framework is detected at the root
+- Falls back to static site detection
+
+## ✅ Solution A: Separate Vercel Projects (RECOMMENDED)
+
+**This is the production-grade, best practice approach.**
+
+Create **two separate Vercel projects**:
+
+| Vercel Project | Root Directory | Framework |
+|----------------|---------------|-----------|
+| `admin` | `apps/admin` | Next.js (auto-detected) |
+| `storefront` | `apps/storefront` | Next.js (auto-detected) |
+
+### Setup Steps:
+
+1. **Create Admin Project:**
+   - In Vercel: New Project → Import repository
+   - **Root Directory**: Set to `apps/admin`
+   - Framework: Next.js (auto-detected)
+   - Deploy
+
+2. **Create Storefront Project:**
+   - In Vercel: New Project → Import same repository
+   - **Root Directory**: Set to `apps/storefront`
+   - Framework: Next.js (auto-detected)
+   - Deploy
+
+3. **Benefits:**
+   - ✅ No root directory confusion
+   - ✅ Each app deploys independently
+   - ✅ Separate environment variables
+   - ✅ Separate build logs
+   - ✅ No `.next` vs `public/` confusion
+   - ✅ Production-ready monorepo setup
+
+## ⚠️ CRITICAL: Root Directory Configuration
+
+**You MUST configure Root Directory in Vercel dashboard for each project.**
 
 ## Monorepo Setup
 
@@ -35,31 +91,43 @@ Each Next.js app should be deployed as a **separate Vercel project** with the fo
 4. **Output Directory**: `.next` (auto-detected)
 5. **Install Command**: `pnpm install --frozen-lockfile` (from repo root)
 
-## Setting Root Directory in Vercel (REQUIRED)
+### How to Set Root Directory:
 
-**This step is MANDATORY. Without it, deployments will fail.**
-
-1. Go to your Vercel project dashboard
-2. Select your project (admin or storefront)
-3. Navigate to **Settings** → **General**
-4. Scroll to **Root Directory** section
-5. Click **Edit** and set:
-   - For admin project: `apps/admin`
-   - For storefront project: `apps/storefront`
+1. Go to **Vercel Dashboard** → Your Project
+2. Navigate to **Settings** → **General**
+3. Find **Root Directory** section (under "Project Settings")
+4. Click **Edit**
+5. Enter the app directory:
+   - Admin project: `apps/admin`
+   - Storefront project: `apps/storefront`
 6. Click **Save**
-7. Redeploy your project
+7. **Redeploy** your project (or push a new commit)
 
-**If Root Directory is not set, Vercel will try to build from the repository root and fail with "No Output Directory named 'public' found" error.**
+### Verification:
+
+After setting Root Directory, Vercel will:
+- ✅ Use the `vercel.json` from that directory
+- ✅ Build from that directory context
+- ✅ Find `.next` output directory (not `public/`)
+- ✅ Deploy successfully
+
+**Without Root Directory set, Vercel defaults to repository root → looks for `public/` → fails.**
 
 ## Why No Root vercel.json?
 
-The root directory does NOT have a `vercel.json` because:
-- Each app is deployed as a separate Vercel project
-- Each app has its own `vercel.json` configured correctly
-- Vercel uses the `vercel.json` from the Root Directory you configure
-- Having a root `vercel.json` would override the app-specific configurations
+**We intentionally do NOT have a root `vercel.json` because:**
 
-**The Root Directory setting in Vercel dashboard tells Vercel which directory to use as the project root, and which `vercel.json` to read.**
+1. **Each app is a separate Vercel project** with Root Directory set to the app folder
+2. **Each app has its own `vercel.json`** in `apps/admin/vercel.json` and `apps/storefront/vercel.json`
+3. **Vercel reads `vercel.json` from the Root Directory** you configure
+4. **Root `vercel.json` would conflict** with the monorepo setup
+
+**The Root Directory setting in Vercel dashboard:**
+- Tells Vercel which directory is the project root
+- Determines which `vercel.json` to read
+- Sets where to look for framework output (`.next` for Next.js)
+
+**If you set Root Directory to `apps/admin`, Vercel uses `apps/admin/vercel.json` and looks for `.next` in `apps/admin/.next`.**
 
 ## Build Commands
 
@@ -98,21 +166,30 @@ Set environment variables in each Vercel project:
 
 ### Error: "No Output Directory named 'public' found"
 
-**This is the most common error and means Root Directory is not configured.**
+**Root Cause:** Vercel successfully builds everything, but then can't find the deployable output because Root Directory is not configured.
 
-This error occurs when:
-- Root Directory is not set in Vercel project settings
-- Vercel defaults to building from repository root
-- Repository root has no `vercel.json` or build output
+**Why it happens:**
+1. ✅ Builds succeed (Prisma, TypeScript, Next.js, everything)
+2. ❌ Vercel looks for output at repository root (`/`)
+3. ❌ Doesn't find Next.js `.next` directory (it's in `apps/admin/.next`)
+4. ❌ Falls back to static site detection
+5. ❌ Looks for `public/` directory
+6. ❌ Doesn't find it
+7. ❌ **Fails**
 
-**Solution (REQUIRED)**:
-1. Go to Vercel project Settings → General
-2. Find **Root Directory** section
-3. Click **Edit** and enter: `apps/admin` (for admin) or `apps/storefront` (for storefront)
-4. Click **Save**
-5. Trigger a new deployment
+**Solution (REQUIRED - Dashboard Configuration):**
 
-**This is a Vercel dashboard setting, not a code change. It must be configured for each project.**
+1. Go to **Vercel Dashboard** → Your Project
+2. Navigate to **Settings** → **General**
+3. Find **Root Directory** section
+4. Click **Edit**
+5. Enter: 
+   - `apps/admin` (for admin project)
+   - `apps/storefront` (for storefront project)
+6. Click **Save**
+7. **Redeploy** (push a new commit or redeploy from dashboard)
+
+**After fixing:** Vercel will look in `apps/admin/.next` (or `apps/storefront/.next`) and find the Next.js output correctly.
 
 ### Build Fails with "Cannot find module"
 
