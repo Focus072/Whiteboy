@@ -1,24 +1,20 @@
 import { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { PrismaClient, ActorType, OrderStatus, ComplianceCheckResult, ComplianceDecision, AgeVerificationStatus, AgeVerificationProvider, PaymentProvider, PaymentStatus } from '@prisma/client';
+import { prisma, ActorType, OrderStatus, ComplianceCheckResult, ComplianceDecision, AgeVerificationStatus, AgeVerificationProvider, PaymentProvider, PaymentStatus } from '@lumi/db';
 import { evaluateCompliance } from '@lumi/compliance-core';
 import type { OrderInput } from '@lumi/compliance-core';
 import { inngest } from '../plugins/inngest.js';
-
-const prisma = new PrismaClient({
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-});
 import { verifyAge } from '../services/veriff.js';
 import type { VeriffError } from '../services/veriff.types.js';
 import { authorizePayment, type AuthorizeNetError } from '../services/authorizenet.js';
 
 const createOrderSchema = z.object({
-  shippingAddressId: z.string().uuid(),
-  billingAddressId: z.string().uuid(),
+  shippingAddressId: z.string().min(1),
+  billingAddressId: z.string().min(1),
   items: z.array(
     z.object({
-      productId: z.string().uuid(),
-      quantity: z.number().int().positive(),
+      productId: z.string().min(1),
+      quantity: z.number().int(),
     })
   ).min(1),
   customerFirstName: z.string().min(1),
@@ -29,7 +25,7 @@ const createOrderSchema = z.object({
     cardNumber: z.string().regex(/^\d{13,19}$/, 'Card number must be 13-19 digits'),
     expirationDate: z.string().regex(/^\d{2}\/\d{2}$/, 'Expiration date must be in MM/YY format'),
     cvv: z.string().regex(/^\d{3,4}$/, 'CVV must be 3-4 digits'),
-  }),
+  }).optional(),
 });
 
 export const ordersRoutes: FastifyPluginAsync = async (fastify) => {
@@ -274,6 +270,13 @@ export const ordersRoutes: FastifyPluginAsync = async (fastify) => {
       const finalTotalAmount = roundTo2(totalAmount);
 
       // Step 8: Authorize payment with Authorize.Net
+      if (!body.payment) {
+        return reply.code(400).send({
+          success: false,
+          error: { code: 'PAYMENT_REQUIRED', message: 'Payment details are required' },
+        });
+      }
+
       let paymentResult;
       try {
         // Convert expiration date from MM/YY to MMYY

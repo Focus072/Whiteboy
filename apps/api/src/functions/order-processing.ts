@@ -1,4 +1,4 @@
-import { inngest } from '../plugins/inngest.js';
+import type { Inngest } from 'inngest';
 import { PrismaClient } from '@prisma/client';
 import { sendEmail, generateOrderConfirmationEmail, generateShippingNotificationEmail } from '../services/email.js';
 
@@ -6,15 +6,16 @@ const prisma = new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
 });
 
-/**
- * Send order confirmation email
- * Triggered when an order is created and paid
- */
-export const sendOrderConfirmation = inngest.createFunction(
-  { id: 'send-order-confirmation' },
-  { event: 'order/created' },
-  async ({ event, step }) => {
-    const { orderId } = event.data;
+export function createOrderProcessingFunctions(inngest: Inngest) {
+  /**
+   * Send order confirmation email
+   * Triggered when an order is created and paid
+   */
+  const sendOrderConfirmation = inngest.createFunction(
+    { id: 'send-order-confirmation' },
+    { event: 'order/created' },
+    async ({ event, step }) => {
+      const { orderId } = event.data;
 
     // Fetch order details
     const order = await step.run('fetch-order', async () => {
@@ -96,19 +97,19 @@ export const sendOrderConfirmation = inngest.createFunction(
       return result;
     });
 
-    return { success: true, orderId };
-  }
-);
+      return { success: true, orderId };
+    }
+  );
 
-/**
- * Send shipping notification email
- * Triggered when an order status changes to SHIPPED
- */
-export const sendShippingNotification = inngest.createFunction(
-  { id: 'send-shipping-notification' },
-  { event: 'order/shipped' },
-  async ({ event, step }) => {
-    const { orderId, trackingNumber, carrier } = event.data;
+  /**
+   * Send shipping notification email
+   * Triggered when an order status changes to SHIPPED
+   */
+  const sendShippingNotification = inngest.createFunction(
+    { id: 'send-shipping-notification' },
+    { event: 'order/shipped' },
+    async ({ event, step }) => {
+      const { orderId, trackingNumber, carrier } = event.data;
 
     // Fetch order details
     const order = await step.run('fetch-order', async () => {
@@ -159,15 +160,10 @@ export const sendShippingNotification = inngest.createFunction(
       return result;
     });
 
-    return { success: true, orderId };
-  }
-);
+      return { success: true, orderId };
+    }
+  );
 
-/**
- * Export all functions as an array
- */
-export const orderProcessingFunctions = [
-  sendOrderConfirmation,
-  sendShippingNotification,
-];
+  return [sendOrderConfirmation, sendShippingNotification];
+}
 

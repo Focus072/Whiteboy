@@ -3,19 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "pnpm --parallel --filter api --filter admin --filter storefront dev",
-    "dev:api": "pnpm --filter api dev",
-    "dev:admin": "pnpm --filter admin dev",
-    "dev:storefront": "pnpm --filter storefront dev",
+    "dev": "pnpm --parallel --filter @lumi/api --filter @lumi/admin --filter @lumi/storefront dev",
+    "dev:api": "pnpm --filter @lumi/api dev",
+    "dev:admin": "pnpm --filter @lumi/admin dev",
+    "dev:storefront": "pnpm --filter @lumi/storefront dev",
     "dev:inngest": "npx inngest-cli dev",
-    "build": "pnpm --filter db generate && pnpm --filter '...' build",
-    "build:admin": "pnpm --filter db generate && pnpm --filter @lumi/shared build && pnpm --filter @lumi/compliance-core build && pnpm --filter admin build",
-    "build:api": "pnpm --filter db generate && pnpm --filter @lumi/shared build && pnpm --filter @lumi/compliance-core build && pnpm --filter api build",
-    "build:storefront": "pnpm --filter db generate && pnpm --filter @lumi/shared build && pnpm --filter storefront build",
-    "db:generate": "pnpm --filter db generate",
-    "db:migrate": "pnpm --filter db migrate",
-    "db:studio": "pnpm --filter db studio",
-    "create-admin": "pnpm --filter api create-admin"
+    "build": "pnpm --filter @lumi/db generate && pnpm -r --if-present build",
+    "build:admin": "pnpm --filter @lumi/db generate && pnpm --filter @lumi/shared build && pnpm --filter @lumi/compliance-core build && pnpm --filter @lumi/admin build",
+    "build:api": "pnpm --filter @lumi/db generate && pnpm --filter @lumi/shared build && pnpm --filter @lumi/compliance-core build && pnpm --filter @lumi/api build",
+    "build:storefront": "pnpm --filter @lumi/db generate && pnpm --filter @lumi/shared build && pnpm --filter @lumi/storefront build",
+    "db:generate": "pnpm --filter @lumi/db generate",
+    "db:migrate": "pnpm --filter @lumi/db migrate",
+    "db:studio": "pnpm --filter @lumi/db studio",
+    "create-admin": "pnpm --filter @lumi/api create-admin"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
@@ -25,6 +25,16 @@
     "node": "24.x",
     "pnpm": "10.26.0"
   },
-  "packageManager": "pnpm@10.26.0"
+  "packageManager": "pnpm@10.26.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "esbuild",
+      "prisma",
+      "protobufjs",
+      "unrs-resolver"
+    ]
+  }
 }
 

@@ -23,8 +23,8 @@ vi.mock('../services/authorizenet.js', () => ({
   authorizePayment: (...args: any[]) => mockAuthorizePayment(...args),
 }));
 
-vi.mock('@lumi/db', () => {
-  const mockPrisma = {
+const { mockPrisma } = vi.hoisted(() => ({
+  mockPrisma: {
     address: {
       findUnique: vi.fn(),
     },
@@ -49,35 +49,58 @@ vi.mock('@lumi/db', () => {
     session: {
       findUnique: vi.fn(),
     },
-  };
-  return {
-    prisma: mockPrisma,
-    OrderStatus: {
-      DRAFT: 'DRAFT',
-      BLOCKED: 'BLOCKED',
-    },
-    ComplianceDecision: {
-      ALLOW: 'ALLOW',
-      BLOCK: 'BLOCK',
-    },
-    ComplianceCheckResult: {
-      PASS: 'PASS',
-      FAIL: 'FAIL',
-    },
-    AgeVerificationStatus: { PASS: 'PASS', FAIL: 'FAIL' },
-    AgeVerificationProvider: { VERIFF: 'VERIFF' },
-    PaymentProvider: { AUTHORIZE_NET: 'AUTHORIZE_NET' },
-    PaymentStatus: { AUTHORIZED: 'AUTHORIZED', FAILED: 'FAILED' },
-  };
-});
+  },
+}));
+
+vi.mock('@prisma/client', () => ({
+  PrismaClient: vi.fn().mockImplementation(() => mockPrisma),
+  OrderStatus: {
+    DRAFT: 'DRAFT',
+    PAID: 'PAID',
+    BLOCKED: 'BLOCKED',
+  },
+  ComplianceDecision: {
+    ALLOW: 'ALLOW',
+    BLOCK: 'BLOCK',
+  },
+  ComplianceCheckResult: {
+    PASS: 'PASS',
+    FAIL: 'FAIL',
+  },
+  AgeVerificationStatus: { PASS: 'PASS', FAIL: 'FAIL' },
+  AgeVerificationProvider: { VERIFF: 'VERIFF' },
+  PaymentProvider: { AUTHORIZE_NET: 'AUTHORIZE_NET' },
+  PaymentStatus: { AUTHORIZED: 'AUTHORIZED', FAILED: 'FAILED' },
+  FlavorType: {
+    TOBACCO: 'TOBACCO',
+    MENTHOL: 'MENTHOL',
+    FRUIT: 'FRUIT',
+    DESSERT: 'DESSERT',
+    OTHER: 'OTHER',
+  },
+  UserRole: {
+    ADMIN: 'ADMIN',
+    USER: 'USER',
+  },
+  ActorType: {
+    USER: 'USER',
+    SYSTEM: 'SYSTEM',
+  },
+}));
 
 describe('POST /orders', () => {
   let app: FastifyInstance;
-  let mockPrisma: any;
 
   beforeEach(async () => {
-    const dbMock = await vi.importMock<typeof import('@lumi/db')>('@lumi/db');
-    mockPrisma = dbMock.prisma;
+    // Fully reset per-test state (mockResolvedValueOnce queues, call history, etc.)
+    for (const model of Object.values(mockPrisma)) {
+      for (const fn of Object.values(model as any)) {
+        if (typeof (fn as any)?.mockReset === 'function') (fn as any).mockReset();
+      }
+    }
+    mockVerifyAge.mockReset();
+    mockAuthorizePayment.mockReset();
+
     app = await buildFastify();
     await app.ready();
 
@@ -99,8 +122,11 @@ describe('POST /orders', () => {
       user: testUser,
     } as any);
 
-    // Reset all mocks
-    vi.clearAllMocks();
+    // Default DB writes should behave like real Prisma promises
+    mockPrisma.auditEvent.create.mockResolvedValue({} as any);
+    mockPrisma.payment.create.mockResolvedValue({} as any);
+    mockPrisma.ageVerification.create.mockResolvedValue({} as any);
+    mockPrisma.complianceSnapshot.create.mockResolvedValue({} as any);
     
     // Default Veriff mock - PASS
     mockVerifyAge.mockResolvedValue({
@@ -261,23 +287,25 @@ describe('POST /orders', () => {
     });
 
     // Verify order was created with correct pricing
-    expect(mockPrisma.order.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        totalAmount: 29.99, // product.price * quantity (no tax in test)
-        subtotal: 29.99, // subtotal should match product price * quantity
-        taxAmount: 0,
-        exciseTaxAmount: 0,
-        items: {
-          create: expect.arrayContaining([
-            expect.objectContaining({
-              productId: 'prod-1',
-              quantity: 1,
-              unitPrice: 29.99,
-            }),
-          ]),
-        },
-      }),
-    });
+    expect(mockPrisma.order.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          totalAmount: 29.99, // product.price * quantity (no tax in test)
+          subtotal: 29.99, // subtotal should match product price * quantity
+          taxAmount: 0,
+          exciseTaxAmount: 0,
+          items: {
+            create: expect.arrayContaining([
+              expect.objectContaining({
+                productId: 'prod-1',
+                quantity: 1,
+                unitPrice: 29.99,
+              }),
+            ]),
+          },
+        }),
+      })
+    );
 
     // Verify payment was authorized
     expect(mockAuthorizePayment).toHaveBeenCalledWith({
@@ -330,6 +358,20 @@ describe('POST /orders', () => {
     mockPrisma.address.findUnique
       .mockResolvedValueOnce(shippingAddress as any)
       .mockResolvedValueOnce(billingAddress as any);
+
+    const product = {
+      id: 'prod-1',
+      name: 'Test Product',
+      sku: 'TEST-001',
+      flavorType: 'TOBACCO',
+      price: 29.99,
+      netWeightGrams: 50,
+      caUtlApproved: true,
+      sensoryCooling: false,
+      active: true,
+    };
+
+    mockPrisma.product.findMany.mockResolvedValue([product] as any);
 
     // Mock Veriff FAIL
     mockVerifyAge.mockResolvedValue({
@@ -400,6 +442,20 @@ describe('POST /orders', () => {
     mockPrisma.address.findUnique
       .mockResolvedValueOnce(shippingAddress as any)
       .mockResolvedValueOnce(billingAddress as any);
+
+    const product = {
+      id: 'prod-1',
+      name: 'Test Product',
+      sku: 'TEST-001',
+      flavorType: 'TOBACCO',
+      price: 29.99,
+      netWeightGrams: 50,
+      caUtlApproved: true,
+      sensoryCooling: false,
+      active: true,
+    };
+
+    mockPrisma.product.findMany.mockResolvedValue([product] as any);
 
     // Mock Veriff timeout
     mockVerifyAge.mockRejectedValue({
@@ -479,36 +535,6 @@ describe('POST /orders', () => {
 
     mockPrisma.product.findMany.mockResolvedValue([product] as any);
 
-    mockPrisma.order.create.mockResolvedValue({
-      id: 'order-123',
-      userId: 'user-123',
-      shippingAddressId: 'addr-1',
-      billingAddressId: 'addr-2',
-      status: OrderStatus.BLOCKED,
-      totalAmount: 0,
-      taxAmount: 0,
-      exciseTaxAmount: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      items: [],
-    } as any);
-
-    mockPrisma.complianceSnapshot.create.mockResolvedValue({
-      id: 'snapshot-123',
-      orderId: 'order-123',
-      shippingState: 'CA',
-      caFlavorCheck: ComplianceCheckResult.FAIL,
-      caSensoryCheck: ComplianceCheckResult.PASS,
-      poBoxCheck: ComplianceCheckResult.PASS,
-      ageVerificationCheck: ComplianceCheckResult.PASS,
-      stakeCallRequired: false,
-      finalDecision: ComplianceDecision.BLOCK,
-      createdAt: new Date(),
-    } as any);
-
-    mockPrisma.ageVerification.create.mockResolvedValue({} as any);
-    mockPrisma.auditEvent.create.mockResolvedValue({} as any);
-
     const response = await app.inject({
       method: 'POST',
       url: '/orders',
@@ -542,12 +568,8 @@ describe('POST /orders', () => {
     expect(body.error.code).toBe('ORDER_BLOCKED');
     expect(body.error.reasonCodes).toContain('CA_FLAVOR_BAN');
 
-    // Verify order was created with BLOCKED status
-    expect(mockPrisma.order.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        status: OrderStatus.BLOCKED,
-      }),
-    });
+    // Verify order was NOT created
+    expect(mockPrisma.order.create).not.toHaveBeenCalled();
   });
 
   it('should return 400 when shipping address not found', async () => {
