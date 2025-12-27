@@ -9,7 +9,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 export default function LoginPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const nextPath = searchParams.get('next') || '/account';
+  const nextPath = searchParams.get('next') || '/admin/dashboard';
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
