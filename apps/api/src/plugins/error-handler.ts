@@ -6,14 +6,18 @@ export const errorHandler: FastifyPluginAsync = async (fastify) => {
     const reqId = request.id;
 
     // Zod validation errors
-    if (error instanceof ZodError) {
-      fastify.log.warn({ reqId, error: error.errors }, 'Validation error');
+    const zodIssues = (error as any)?.issues ?? (error as any)?.errors;
+    const isZodError =
+      error instanceof ZodError || (error as any)?.name === 'ZodError' || Array.isArray(zodIssues);
+
+    if (isZodError) {
+      fastify.log.warn({ reqId, error: zodIssues }, 'Validation error');
       return reply.code(400).send({
         success: false,
         error: {
           code: 'VALIDATION_ERROR',
           message: 'Invalid request data',
-          details: error.errors,
+          details: zodIssues,
         },
       });
     }

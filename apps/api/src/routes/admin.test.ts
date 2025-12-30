@@ -19,8 +19,8 @@ vi.mock('@aws-sdk/client-s3', () => ({
   PutObjectCommand: vi.fn(),
 }));
 
-vi.mock('@lumi/db', () => {
-  const mockPrisma = {
+const { mockPrisma } = vi.hoisted(() => ({
+  mockPrisma: {
     order: {
       findUnique: vi.fn(),
       update: vi.fn(),
@@ -49,10 +49,13 @@ vi.mock('@lumi/db', () => {
       findFirst: vi.fn(),
       create: vi.fn(),
     },
-  };
-  return {
-    prisma: mockPrisma,
+  },
+}));
+
+vi.mock('@prisma/client', () => ({
+  PrismaClient: vi.fn().mockImplementation(() => mockPrisma),
   OrderStatus: {
+    DRAFT: 'DRAFT',
     PAID: 'PAID',
     SHIPPED: 'SHIPPED',
   },
@@ -68,11 +71,22 @@ vi.mock('@lumi/db', () => {
     PASS: 'PASS',
     FAIL: 'FAIL',
   },
-    ActorType: {
-      USER: 'USER',
-    },
-  };
-});
+  FlavorType: {
+    TOBACCO: 'TOBACCO',
+    MENTHOL: 'MENTHOL',
+    FRUIT: 'FRUIT',
+    DESSERT: 'DESSERT',
+    OTHER: 'OTHER',
+  },
+  UserRole: {
+    ADMIN: 'ADMIN',
+    USER: 'USER',
+  },
+  ActorType: {
+    USER: 'USER',
+    SYSTEM: 'SYSTEM',
+  },
+}));
 
 // Mock Authorize.Net capture
 const mockCapturePayment = vi.fn();
@@ -91,11 +105,9 @@ global.fetch = vi.fn();
 
 describe('POST /admin/orders/:id/stake-call', () => {
   let app: FastifyInstance;
-  let mockPrisma: any;
 
   beforeEach(async () => {
-    const dbMock = await vi.importMock<typeof import('@lumi/db')>('@lumi/db');
-    mockPrisma = dbMock.prisma;
+    vi.clearAllMocks();
     app = await buildFastify();
     await app.ready();
 
@@ -114,8 +126,6 @@ describe('POST /admin/orders/:id/stake-call', () => {
       revokedAt: null,
       user: testUser,
     } as any);
-
-    vi.clearAllMocks();
   });
 
   it('should create STAKE call record', async () => {
@@ -154,11 +164,9 @@ describe('POST /admin/orders/:id/stake-call', () => {
 
 describe('POST /admin/orders/:id/ship', () => {
   let app: FastifyInstance;
-  let mockPrisma: any;
 
   beforeEach(async () => {
-    const dbMock = await vi.importMock<typeof import('@lumi/db')>('@lumi/db');
-    mockPrisma = dbMock.prisma;
+    vi.clearAllMocks();
     app = await buildFastify();
     await app.ready();
 
@@ -177,8 +185,6 @@ describe('POST /admin/orders/:id/ship', () => {
       revokedAt: null,
       user: testUser,
     } as any);
-
-    vi.clearAllMocks();
 
     // Default mocks
     mockCapturePayment.mockResolvedValue({
@@ -478,11 +484,9 @@ describe('POST /admin/orders/:id/ship', () => {
 
 describe('POST /admin/reports/pact', () => {
   let app: FastifyInstance;
-  let mockPrisma: any;
 
   beforeEach(async () => {
-    const dbMock = await vi.importMock<typeof import('@lumi/db')>('@lumi/db');
-    mockPrisma = dbMock.prisma;
+    vi.clearAllMocks();
     app = await buildFastify();
     await app.ready();
 

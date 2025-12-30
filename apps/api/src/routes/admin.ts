@@ -1,12 +1,8 @@
 import { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { PrismaClient, ActorType, OrderStatus, PaymentStatus, ComplianceDecision, FlavorType, UserRole } from '@prisma/client';
+import { prisma, ActorType, OrderStatus, PaymentStatus, ComplianceDecision, FlavorType, UserRole } from '@lumi/db';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-
-const prisma = new PrismaClient({
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-});
 import { capturePayment, type AuthorizeNetError } from '../services/authorizenet.js';
 import { hashPassword } from '../plugins/auth.js';
 import { createShippingLabel, type ShippoError } from '../services/shippo.js';

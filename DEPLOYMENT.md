@@ -77,7 +77,7 @@ Set these secrets in Fly.io:
 
 ```bash
 flyctl secrets set INNGEST_BASE_URL=https://api.inngest.com
-flyctl secrets set INNGEST_SIGNING_KEY=signkey-prod-e85ec4f252b73073d57573d79f9f06dc6db2f8efb28c9cabf1f5d56920963bda
+flyctl secrets set INNGEST_SIGNING_KEY=signkey-prod-<your_signing_key_here>
 flyctl secrets set DATABASE_URL=postgresql://...
 ```
 

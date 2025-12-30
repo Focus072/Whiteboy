@@ -1,11 +1,8 @@
 import { FastifyPluginAsync, FastifyRequest, FastifyReply } from 'fastify';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@lumi/db';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-
-const prisma = new PrismaClient({
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-});
+import fp from 'fastify-plugin';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -21,14 +18,14 @@ declare module 'fastify' {
   }
 }
 
-export const authPlugin: FastifyPluginAsync = async (fastify) => {
+const authPluginImpl: FastifyPluginAsync = async (fastify) => {
   fastify.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
     const authHeader = request.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return reply.code(401).send({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Missing or invalid authorization header' },
-      });
+      const err: any = new Error('Missing or invalid authorization header');
+      err.statusCode = 401;
+      err.code = 'UNAUTHORIZED';
+      throw err;
     }
 
     const token = authHeader.substring(7);
@@ -40,17 +37,17 @@ export const authPlugin: FastifyPluginAsync = async (fastify) => {
     });
 
     if (!session || session.revokedAt || session.expiresAt < new Date()) {
-      return reply.code(401).send({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Invalid or expired session' },
-      });
+      const err: any = new Error('Invalid or expired session');
+      err.statusCode = 401;
+      err.code = 'UNAUTHORIZED';
+      throw err;
     }
 
     if (session.user.disabledAt) {
-      return reply.code(401).send({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'User account is disabled' },
-      });
+      const err: any = new Error('User account is disabled');
+      err.statusCode = 401;
+      err.code = 'UNAUTHORIZED';
+      throw err;
     }
 
     request.user = {
@@ -63,13 +60,17 @@ export const authPlugin: FastifyPluginAsync = async (fastify) => {
   fastify.decorate('requireAdmin', async (request: FastifyRequest, reply: FastifyReply) => {
     await fastify.authenticate(request, reply);
     if (request.user?.role !== 'ADMIN') {
-      return reply.code(403).send({
-        success: false,
-        error: { code: 'FORBIDDEN', message: 'Admin access required' },
-      });
+      const err: any = new Error('Admin access required');
+      err.statusCode = 403;
+      err.code = 'FORBIDDEN';
+      throw err;
     }
   });
 };
+
+export const authPlugin = fp(authPluginImpl, {
+  name: 'auth-plugin',
+});
 
 export const hashPassword = async (password: string): Promise<string> => {
   return bcrypt.hash(password, 10);

@@ -3,7 +3,7 @@ import { fastifyPlugin } from 'inngest/fastify';
 import type { FastifyInstance } from 'fastify';
 
 // Import your functions
-import { orderProcessingFunctions } from '../functions/order-processing.js';
+import { createOrderProcessingFunctions } from '../functions/order-processing.js';
 
 // Initialize Inngest client with signing key
 export const inngest = new Inngest({
@@ -12,6 +12,8 @@ export const inngest = new Inngest({
   eventKey: process.env.INNGEST_EVENT_KEY || 'dev',
   signingKey: process.env.INNGEST_SIGNING_KEY || 'dev',
 });
+
+const orderProcessingFunctions = createOrderProcessingFunctions(inngest);
 
 /**
  * Register Inngest plugin with Fastify
