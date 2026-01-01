@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd ../.. && pnpm --filter db generate && pnpm --filter @lumi/shared build && pnpm --filter main build",
+  "buildCommand": "cd ../.. && pnpm --filter db generate && pnpm --filter db build && pnpm --filter @lumi/shared build && pnpm --filter main build",
   "outputDirectory": ".next",
   "framework": "nextjs",
   "installCommand": "cd ../.. && pnpm install --frozen-lockfile"
