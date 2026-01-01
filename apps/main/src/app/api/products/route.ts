@@ -88,13 +88,15 @@ export async function GET(request: NextRequest) {
     console.error('Get products error:', error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     const errorStack = error instanceof Error ? error.stack : undefined;
+    
+    // Include error details in response for debugging
     return NextResponse.json(
       {
         success: false,
         error: { 
           code: 'INTERNAL_ERROR', 
-          message: process.env.NODE_ENV === 'production' ? 'An error occurred' : errorMessage,
-          ...(process.env.NODE_ENV !== 'production' && { stack: errorStack }),
+          message: errorMessage,
+          ...(errorStack && { stack: errorStack }),
         },
       },
       { status: 500 }
