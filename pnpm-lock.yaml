@@ -127,6 +127,9 @@ importers:
         specifier: ^3.22.4
         version: 3.25.76
     devDependencies:
+      '@prisma/nextjs-monorepo-workaround-plugin':
+        specifier: ^7.2.0
+        version: 7.2.0
       '@types/bcryptjs':
         specifier: ^3.0.0
         version: 3.0.0
@@ -1382,6 +1385,9 @@ packages:
 
   '@prisma/get-platform@5.22.0':
     resolution: {integrity: sha512-pHhpQdr1UPFpt+zFfnPazhulaZYCUqeIcPpJViYoq9R+D/yw4fjE+CtnsnKzPYm0ddUbeXUzjGVGIRVgPDCk4Q==}
+
+  '@prisma/nextjs-monorepo-workaround-plugin@7.2.0':
+    resolution: {integrity: sha512-wkUYEHR2vT/6xB9ufOT+s6pfB4+ZFf4n3qSMmiq+n2EclMXV6LcShY/iUJfagRK5Jqadc6FMdf28yDSD0Qb6/w==}
 
   '@protobufjs/aspromise@1.1.2':
     resolution: {integrity: sha512-j+gKExEuLmKwvz3OgROXtrJ2UG2x8Ch2YZUxahh+s1F2HZ+wAceUNLkvy6zKCPVRkU++ZWQrdxsUeQXmcg4uoQ==}
@@ -5962,6 +5968,8 @@ snapshots:
   '@prisma/get-platform@5.22.0':
     dependencies:
       '@prisma/debug': 5.22.0
+
+  '@prisma/nextjs-monorepo-workaround-plugin@7.2.0': {}
 
   '@protobufjs/aspromise@1.1.2': {}
 
