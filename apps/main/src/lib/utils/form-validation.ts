@@ -2,6 +2,8 @@
  * Real-time form validation utilities
  */
 
+import { useState, useCallback } from 'react';
+
 export interface ValidationRule {
   test: (value: string) => boolean;
   message: string;
@@ -164,6 +166,3 @@ export function useFieldValidation(
     reset,
   };
 }
-
-// Import useState and useCallback for the hook
-import { useState, useCallback } from 'react';
