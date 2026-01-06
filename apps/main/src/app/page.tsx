@@ -9,7 +9,6 @@ export default function LandingPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
-  const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -19,8 +18,7 @@ export default function LandingPage() {
     setError('');
 
     try {
-      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/signup';
-      const response = await fetch(endpoint, {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -49,13 +47,6 @@ export default function LandingPage() {
             router.push('/account');
           }
           router.refresh();
-        } else {
-          // No token but successful (signup), redirect to login
-          if (!isLogin) {
-            setIsLogin(true);
-            setError('');
-            alert('Registration successful! Please log in.');
-          }
         }
       } else {
         setError(data.error?.message || 'An error occurred');
@@ -161,18 +152,14 @@ export default function LandingPage() {
                   disabled={loading}
                   className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-md font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? 'LOADING...' : isLogin ? 'LOG IN' : 'REGISTER'}
+                  {loading ? 'LOADING...' : 'LOG IN'}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsLogin(!isLogin);
-                    setError('');
-                  }}
-                  className="flex-1 bg-gray-200 text-gray-800 px-6 py-3 rounded-md font-semibold hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                <Link
+                  href="/auth/signup"
+                  className="flex-1 bg-gray-200 text-gray-800 px-6 py-3 rounded-md font-semibold hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 text-center"
                 >
-                  {isLogin ? 'REGISTER' : 'LOG IN'}
-                </button>
+                  REGISTER
+                </Link>
               </div>
 
               <div className="text-center space-y-2">

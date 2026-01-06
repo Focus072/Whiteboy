@@ -4,8 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-
-export default function SignupPage() {
+export default function RegisterPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -32,8 +31,6 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      // Note: This assumes a customer signup endpoint exists
-      // For now, we'll need to create this endpoint or use a workaround
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -47,9 +44,26 @@ export default function SignupPage() {
 
       if (data.success && data.data?.token) {
         localStorage.setItem('auth_token', data.data.token);
-        router.push('/account');
+        
+        // Get user info to check role
+        const userResponse = await fetch('/api/me', {
+          headers: {
+            Authorization: `Bearer ${data.data.token}`,
+          },
+        });
+        
+        const userData = await userResponse.json();
+        const userRole = userData.data?.role;
+        
+        // Redirect based on role
+        if (userRole === 'ADMIN' || userRole === 'FULFILLMENT' || userRole === 'READ_ONLY') {
+          router.push('/dashboard');
+        } else {
+          router.push('/account');
+        }
+        router.refresh();
       } else {
-        setError(data.error?.message || 'Signup failed');
+        setError(data.error?.message || 'Registration failed');
       }
     } catch (err) {
       setError('Network error. Please try again.');
@@ -59,90 +73,162 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Create your account
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Or{' '}
-            <Link href="/auth/login" className="font-medium text-indigo-600 hover:text-indigo-500">
-              sign in to existing account
+    <div className="min-h-screen flex flex-col bg-white">
+      {/* Warning Banner */}
+      <div className="bg-black text-white py-2 text-center text-sm font-semibold">
+        WARNING: This product contains nicotine. Nicotine is an addictive chemical.
+      </div>
+
+      {/* Header */}
+      <header className="bg-blue-600 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              <button className="lg:hidden text-white focus:outline-none">
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              <Link href="/" className="text-2xl font-bold">
+                LUMI
+              </Link>
+            </div>
+            <Link href="/auth/login" className="text-sm hover:underline flex items-center space-x-1">
+              <span>LOG IN</span>
             </Link>
-          </p>
+          </div>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <div className="text-sm text-red-800">{error}</div>
-            </div>
-          )}
-          <div className="rounded-md shadow-sm space-y-4">
-            <div>
-              <label htmlFor="email" className="sr-only">
-                Email address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                minLength={8}
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Password (min 8 characters)"
-              />
-            </div>
-            <div>
-              <label htmlFor="confirmPassword" className="sr-only">
-                Confirm Password
-              </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                autoComplete="new-password"
-                required
-                minLength={8}
-                value={formData.confirmPassword}
-                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Confirm Password"
-              />
-            </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full">
+          <h1 className="text-4xl font-bold text-center text-gray-900 mb-8">
+            CREATE YOUR ACCOUNT
+          </h1>
+
+          {/* Registration Form */}
+          <div className="bg-white border border-gray-300 rounded-lg p-8 shadow-sm">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                  {error}
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter your email"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  required
+                  minLength={8}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Password (min 8 characters)"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                  Confirm Password
+                </label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  required
+                  minLength={8}
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Confirm your password"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-blue-600 text-white px-6 py-3 rounded-md font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'CREATING ACCOUNT...' : 'REGISTER'}
+              </button>
+
+              <div className="text-center">
+                <p className="text-sm text-gray-600">
+                  Already have an account?{' '}
+                  <Link href="/auth/login" className="text-blue-600 hover:underline font-medium">
+                    Log in
+                  </Link>
+                </p>
+              </div>
+            </form>
           </div>
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-            >
-              {loading ? 'Creating account...' : 'Create account'}
-            </button>
+          {/* Age Verification Disclaimer */}
+          <div className="mt-8 text-center text-sm text-gray-600 space-y-2">
+            <p className="font-semibold">LUMI IS FOR ADULT NICOTINE CONSUMERS 21+ ONLY.</p>
+            <p>
+              By creating an account, you confirm that you are of legal age to purchase nicotine products in your jurisdiction.
+              Age verification will be required upon checkout and delivery.
+            </p>
+            <p className="text-xs mt-4">
+              WARNING: This product contains nicotine. Nicotine is an addictive chemical. Keep out of reach of children and pets.
+            </p>
           </div>
-        </form>
-      </div>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            <div>
+              <h3 className="text-lg font-semibold mb-4">FOLLOW US</h3>
+              <div className="space-y-2">
+                <a href="#" className="block hover:underline">Facebook</a>
+                <a href="#" className="block hover:underline">Instagram</a>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold mb-4">LEGAL</h3>
+              <div className="space-y-2">
+                <Link href="#" className="block hover:underline">WEBSITE TERMS OF USE</Link>
+                <Link href="#" className="block hover:underline">PRIVACY POLICY</Link>
+                <Link href="#" className="block hover:underline">TERMS AND CONDITIONS</Link>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold mb-4">CONTACT</h3>
+              <p className="text-sm text-gray-400">
+                MAILING ADDRESS<br />
+                Lumi Pouches<br />
+                United States
+              </p>
+            </div>
+          </div>
+          <div className="border-t border-gray-800 pt-8 text-center text-sm text-gray-400">
+            <p>©2025 LUMI POUCHES. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
-

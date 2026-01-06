@@ -57,70 +57,159 @@ export default function LoginPageClient() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Sign in to your account</h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Or{' '}
-            <Link href="/auth/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
-              create a new account
+    <div className="min-h-screen flex flex-col bg-white">
+      {/* Warning Banner */}
+      <div className="bg-black text-white py-2 text-center text-sm font-semibold">
+        WARNING: This product contains nicotine. Nicotine is an addictive chemical.
+      </div>
+
+      {/* Header */}
+      <header className="bg-blue-600 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              <button className="lg:hidden text-white focus:outline-none">
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              <Link href="/" className="text-2xl font-bold">
+                LUMI
+              </Link>
+            </div>
+            <Link href="/auth/signup" className="text-sm hover:underline flex items-center space-x-1">
+              <span>REGISTER</span>
             </Link>
-          </p>
+          </div>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <div className="text-sm text-red-800">{error}</div>
-            </div>
-          )}
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="email" className="sr-only">
-                Email address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
-              />
-            </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full">
+          <h1 className="text-4xl font-bold text-center text-gray-900 mb-8">
+            LOG IN TO YOUR ACCOUNT
+          </h1>
+
+          {/* Login Form */}
+          <div className="bg-white border border-gray-300 rounded-lg p-8 shadow-sm">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                  {error}
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter your email"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  required
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter your password"
+                />
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  id="remember"
+                  type="checkbox"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="remember" className="ml-2 block text-sm text-gray-700">
+                  Remember me?
+                </label>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-blue-600 text-white px-6 py-3 rounded-md font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'LOGGING IN...' : 'LOG IN'}
+              </button>
+
+              <div className="text-center space-y-2">
+                <Link href="/auth/login" className="text-sm text-blue-600 hover:underline block">
+                  Reset/Forgot password?
+                </Link>
+                <p className="text-sm text-gray-600">
+                  Don't have an account?{' '}
+                  <Link href="/auth/signup" className="text-blue-600 hover:underline font-medium">
+                    Register
+                  </Link>
+                </p>
+              </div>
+            </form>
           </div>
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-            >
-              {loading ? 'Signing in...' : 'Sign in'}
-            </button>
+          {/* Age Verification Disclaimer */}
+          <div className="mt-8 text-center text-sm text-gray-600 space-y-2">
+            <p className="font-semibold">LUMI IS FOR ADULT NICOTINE CONSUMERS 21+ ONLY.</p>
+            <p>
+              By logging in, you confirm that you are of legal age to purchase nicotine products in your jurisdiction.
+              Age verification will be required upon checkout and delivery.
+            </p>
+            <p className="text-xs mt-4">
+              WARNING: This product contains nicotine. Nicotine is an addictive chemical. Keep out of reach of children and pets.
+            </p>
           </div>
-        </form>
-      </div>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            <div>
+              <h3 className="text-lg font-semibold mb-4">FOLLOW US</h3>
+              <div className="space-y-2">
+                <a href="#" className="block hover:underline">Facebook</a>
+                <a href="#" className="block hover:underline">Instagram</a>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold mb-4">LEGAL</h3>
+              <div className="space-y-2">
+                <Link href="#" className="block hover:underline">WEBSITE TERMS OF USE</Link>
+                <Link href="#" className="block hover:underline">PRIVACY POLICY</Link>
+                <Link href="#" className="block hover:underline">TERMS AND CONDITIONS</Link>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold mb-4">CONTACT</h3>
+              <p className="text-sm text-gray-400">
+                MAILING ADDRESS<br />
+                Lumi Pouches<br />
+                United States
+              </p>
+            </div>
+          </div>
+          <div className="border-t border-gray-800 pt-8 text-center text-sm text-gray-400">
+            <p>©2025 LUMI POUCHES. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
-
