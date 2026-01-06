@@ -224,12 +224,12 @@ export default function RegisterPage() {
               </div>
             </div>
             <div>
-              <h3 className="text-lg font-semibold mb-4">LEGAL</h3>
-              <div className="space-y-2">
-                <Link href="#" className="block hover:underline">WEBSITE TERMS OF USE</Link>
-                <Link href="#" className="block hover:underline">PRIVACY POLICY</Link>
-                <Link href="#" className="block hover:underline">TERMS AND CONDITIONS</Link>
-              </div>
+                <h3 className="text-lg font-semibold mb-4">LEGAL</h3>
+                <div className="space-y-2">
+                  <Link href="/legal/terms" className="block hover:underline">TERMS OF USE</Link>
+                  <Link href="/legal/privacy" className="block hover:underline">PRIVACY POLICY</Link>
+                  <Link href="/legal/returns" className="block hover:underline">RETURN POLICY</Link>
+                </div>
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-4">CONTACT</h3>
