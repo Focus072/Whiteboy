@@ -1,12 +1,12 @@
 /**
  * Monitoring and Error Tracking Service
  * 
- * Provides basic error tracking and monitoring capabilities.
- * Can be extended to integrate with Sentry, DataDog, or other monitoring services.
+ * Provides error tracking and monitoring capabilities with Sentry integration.
  * 
  * Environment variables:
  * - MONITORING_ENABLED=true (default: true in production)
- * - SENTRY_DSN=your_sentry_dsn (optional, for Sentry integration)
+ * - SENTRY_DSN=your_sentry_dsn (required for Sentry integration)
+ * - NEXT_PUBLIC_SENTRY_DSN=your_sentry_dsn (required for client-side Sentry)
  */
 
 export interface ErrorContext {
@@ -19,14 +19,14 @@ export interface ErrorContext {
 /**
  * Log error with context
  */
-export function logError(error: Error | unknown, context?: ErrorContext): void {
+export async function logError(error: Error | unknown, context?: ErrorContext): Promise<void> {
   const isEnabled = process.env.MONITORING_ENABLED !== 'false';
   if (!isEnabled) return;
 
   const errorMessage = error instanceof Error ? error.message : String(error);
   const errorStack = error instanceof Error ? error.stack : undefined;
 
-  // Basic console logging (can be extended to send to external service)
+  // Basic console logging
   console.error('Error logged:', {
     message: errorMessage,
     stack: errorStack,
@@ -34,11 +34,41 @@ export function logError(error: Error | unknown, context?: ErrorContext): void {
     timestamp: new Date().toISOString(),
   });
 
-  // TODO: Integrate with Sentry if DSN is provided
-  const sentryDsn = process.env.SENTRY_DSN;
-  if (sentryDsn) {
-    // Sentry integration would go here
-    // Example: Sentry.captureException(error, { extra: context });
+  // Send to Sentry if available (server-side)
+  try {
+    if (typeof window === 'undefined') {
+      // Server-side: use dynamic import to avoid bundling issues
+      const Sentry = await import('@sentry/nextjs');
+      Sentry.captureException(error, {
+        extra: context ? {
+          userId: context.userId,
+          orderId: context.orderId,
+          requestId: context.requestId,
+          ...context.metadata,
+        } : undefined,
+        tags: {
+          component: context?.metadata?.component || 'unknown',
+        },
+      });
+    } else {
+      // Client-side: Sentry is already initialized
+      if ((window as any).Sentry) {
+        (window as any).Sentry.captureException(error, {
+          extra: context ? {
+            userId: context.userId,
+            orderId: context.orderId,
+            requestId: context.requestId,
+            ...context.metadata,
+          } : undefined,
+          tags: {
+            component: context?.metadata?.component || 'unknown',
+          },
+        });
+      }
+    }
+  } catch (sentryError) {
+    // Sentry not available or failed to initialize
+    console.warn('Failed to send error to Sentry:', sentryError);
   }
 }
 

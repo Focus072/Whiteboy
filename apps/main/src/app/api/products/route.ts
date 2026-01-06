@@ -85,18 +85,23 @@ export async function GET(request: NextRequest) {
       data: serializedProducts,
     });
   } catch (error) {
-    console.error('Get products error:', error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorStack = error instanceof Error ? error.stack : undefined;
+    const { logError } = await import('@/lib/services/monitoring');
+    await logError(error, {
+      metadata: { component: 'products-api', endpoint: 'GET /api/products' },
+    });
     
-    // Include error details in response for debugging
+    const { formatApiError } = await import('@/lib/utils/error-messages');
+    const formattedError = formatApiError('INTERNAL_ERROR', error instanceof Error ? error.message : String(error));
+    
     return NextResponse.json(
       {
         success: false,
-        error: { 
-          code: 'INTERNAL_ERROR', 
-          message: errorMessage,
-          ...(errorStack && { stack: errorStack }),
+        error: {
+          code: formattedError.code,
+          message: formattedError.userMessage,
+          ...(process.env.NODE_ENV === 'development' && {
+            technicalMessage: formattedError.message,
+          }),
         },
       },
       { status: 500 }

@@ -8,12 +8,16 @@
     "start": "next start -p 3000",
     "lint": "next lint"
   },
+  "experimental": {
+    "instrumentationHook": true
+  },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.490.0",
     "@aws-sdk/s3-request-presigner": "^3.490.0",
     "@lumi/compliance-core": "workspace:*",
     "@lumi/db": "workspace:*",
     "@lumi/shared": "workspace:*",
+    "@sentry/nextjs": "^10.32.1",
     "bcryptjs": "^3.0.3",
     "inngest": "^3.12.1",
     "next": "^14.0.4",

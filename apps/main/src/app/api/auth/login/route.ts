@@ -10,6 +10,8 @@ import { verifyPassword, generateSessionToken } from '@/lib/api-auth';
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS } from '@/lib/security/rate-limit';
 import { validateCsrfToken, getCsrfIdentifier } from '@/lib/security/csrf';
 import { sanitizeEmail, sanitizeString } from '@/lib/security/sanitize';
+import { formatApiError } from '@/lib/utils/error-messages';
+import { logError } from '@/lib/services/monitoring';
 import crypto from 'crypto';
 
 const loginSchema = z.object({
@@ -71,10 +73,14 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
+      const error = formatApiError('INVALID_CREDENTIALS');
       return NextResponse.json(
         {
           success: false,
-          error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' },
+          error: {
+            code: error.code,
+            message: error.userMessage,
+          },
         },
         { status: 401 }
       );
@@ -92,10 +98,14 @@ export async function POST(request: NextRequest) {
 
     const isValid = await verifyPassword(password, user.passwordHash);
     if (!isValid) {
+      const error = formatApiError('INVALID_CREDENTIALS');
       return NextResponse.json(
         {
           success: false,
-          error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' },
+          error: {
+            code: error.code,
+            message: error.userMessage,
+          },
         },
         { status: 401 }
       );
@@ -140,19 +150,31 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
+      const formattedError = formatApiError('VALIDATION_ERROR', error.errors[0].message);
       return NextResponse.json(
         {
           success: false,
-          error: { code: 'VALIDATION_ERROR', message: error.errors[0].message },
+          error: {
+            code: formattedError.code,
+            message: formattedError.userMessage,
+          },
         },
         { status: 400 }
       );
     }
-    console.error('Login error:', error);
+    
+    await logError(error, {
+      metadata: { component: 'auth-api', endpoint: 'POST /api/auth/login' },
+    });
+    
+    const formattedError = formatApiError('INTERNAL_ERROR');
     return NextResponse.json(
       {
         success: false,
-        error: { code: 'INTERNAL_ERROR', message: 'An error occurred' },
+        error: {
+          code: formattedError.code,
+          message: formattedError.userMessage,
+        },
       },
       { status: 500 }
     );
