@@ -15,17 +15,25 @@ export async function logErrorServer(error: unknown, context?: ErrorContext): Pr
   const isEnabled = process.env.MONITORING_ENABLED !== 'false';
   if (!isEnabled) return;
 
-  Sentry.captureException(error, {
-    extra: context
-      ? {
-          userId: context.userId,
-          orderId: context.orderId,
-          requestId: context.requestId,
-          ...context.metadata,
-        }
-      : undefined,
-    tags: { component: context?.metadata?.component || 'unknown' },
-  });
+  try {
+    // Only use Sentry if DSN is configured
+    if (process.env.SENTRY_DSN) {
+      Sentry.captureException(error, {
+        extra: context
+          ? {
+              userId: context.userId,
+              orderId: context.orderId,
+              requestId: context.requestId,
+              ...context.metadata,
+            }
+          : undefined,
+        tags: { component: context?.metadata?.component || 'unknown' },
+      });
+    }
+  } catch (sentryError) {
+    // If Sentry fails, don't throw - just log to console
+    console.error('Failed to send error to Sentry:', sentryError);
+  }
 }
 
 /**

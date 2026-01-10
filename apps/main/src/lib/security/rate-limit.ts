@@ -73,14 +73,35 @@ export function checkRateLimit(
 /**
  * Get client identifier from request (IP address)
  */
-export function getClientIdentifier(request: Request | { headers: Headers | { get: (name: string) => string | null } }): string {
-  // Try to get real IP from headers (Vercel, Cloudflare, etc.)
-  const forwarded = request.headers.get('x-forwarded-for');
-  const realIp = request.headers.get('x-real-ip');
-  const cfConnectingIp = request.headers.get('cf-connecting-ip');
-  
-  const ip = cfConnectingIp || realIp || (forwarded ? forwarded.split(',')[0].trim() : null) || 'unknown';
-  return ip;
+export function getClientIdentifier(request: any): string {
+  try {
+    // Handle different header formats
+    const getHeader = (name: string): string | null => {
+      if (!request?.headers) return null;
+      
+      if (typeof request.headers.get === 'function') {
+        return request.headers.get(name);
+      }
+      
+      const lowerName = name.toLowerCase();
+      if (request.headers[lowerName]) {
+        return request.headers[lowerName];
+      }
+      
+      return null;
+    };
+    
+    // Try to get real IP from headers (Vercel, Cloudflare, etc.)
+    const forwarded = getHeader('x-forwarded-for');
+    const realIp = getHeader('x-real-ip');
+    const cfConnectingIp = getHeader('cf-connecting-ip');
+    
+    const ip = cfConnectingIp || realIp || (forwarded ? forwarded.split(',')[0].trim() : null) || 'unknown';
+    return ip;
+  } catch (error) {
+    // If we can't get IP, return a default identifier
+    return 'unknown';
+  }
 }
 
 /**
