@@ -49,7 +49,22 @@ export function storeCsrfToken(identifier: string, token: string): void {
  */
 export function validateCsrfToken(identifier: string, token: string): boolean {
   const tokens = csrfTokenStore.get(identifier);
+  
+  // Debug logging in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('CSRF validation:', {
+      identifier,
+      hasTokens: !!tokens,
+      tokenCount: tokens?.size || 0,
+      tokenProvided: !!token,
+      tokenLength: token?.length || 0,
+    });
+  }
+  
   if (!tokens) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('CSRF token store empty for identifier:', identifier);
+    }
     return false;
   }
   
@@ -57,6 +72,8 @@ export function validateCsrfToken(identifier: string, token: string): boolean {
   if (isValid) {
     // Remove token after use (one-time use)
     tokens.delete(token);
+  } else if (process.env.NODE_ENV === 'development') {
+    console.warn('CSRF token not found in store for identifier:', identifier);
   }
   
   return isValid;

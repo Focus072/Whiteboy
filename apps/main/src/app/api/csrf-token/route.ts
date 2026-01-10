@@ -25,6 +25,15 @@ export async function GET(request: NextRequest) {
     // Store token for this identifier
     storeCsrfToken(identifier, token);
     
+    // Debug logging in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('CSRF token generated:', {
+        identifier,
+        sessionId: sessionId.substring(0, 8) + '...',
+        tokenLength: token.length,
+      });
+    }
+    
     const response = NextResponse.json({
       success: true,
       data: {
