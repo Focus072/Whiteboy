@@ -103,9 +103,10 @@ export function trackMetric(metricName: string, value: number, tags?: Record<str
     console.log('Metric tracked:', {
       metric: metricName,
       value,
-    tags,
-    timestamp: new Date().toISOString(),
-  });
+      tags,
+      timestamp: new Date().toISOString(),
+    });
+  }
 
   // TODO: Integrate with metrics service (e.g., DataDog, CloudWatch)
 }
