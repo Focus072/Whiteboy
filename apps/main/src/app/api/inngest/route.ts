@@ -15,6 +15,9 @@ import { createOrderProcessingFunctions } from '@/lib/inngest/functions';
 // Create all Inngest functions
 const functions = createOrderProcessingFunctions(inngest);
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // Export the serve handler
 export const { GET, POST, PUT } = serve({
   client: inngest,
