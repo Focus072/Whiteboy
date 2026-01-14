@@ -256,7 +256,8 @@ export async function POST(
     // Step 4: Download and store label PDF in R2 (optional, non-blocking)
     let labelFileId: string | null = null;
     try {
-      const labelResponse = await fetch(shippoResult.labelUrl);
+      const { secureFetch } = await import('@/lib/security/secure-fetch');
+      const labelResponse = await secureFetch(shippoResult.labelUrl);
       if (labelResponse.ok) {
         const labelBuffer = await labelResponse.arrayBuffer();
         const labelKey = `shipping-labels/${order.id}-${Date.now()}.pdf`;

@@ -108,7 +108,7 @@ export async function authorizePayment(request: AuthorizeNetRequest): Promise<Au
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
   try {
-    const response = await fetch(API_ENDPOINT, {
+    const response = await secureFetch(API_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/xml',
@@ -203,7 +203,7 @@ export async function capturePayment(transactionId: string, amount: number): Pro
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
   try {
-    const response = await fetch(API_ENDPOINT, {
+    const response = await secureFetch(API_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/xml',

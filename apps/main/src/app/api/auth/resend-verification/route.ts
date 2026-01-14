@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     // Rate limiting
     const clientId = getClientIdentifier(request);
-    const rateLimitResult = checkRateLimit(`resend-verification:${clientId}`, {
+    const rateLimitResult = await checkRateLimit(`resend-verification:${clientId}`, {
       points: 3,
       duration: 3600, // 3 per hour
     });

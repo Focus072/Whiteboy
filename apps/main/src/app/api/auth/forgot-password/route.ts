@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
   try {
     // Rate limiting
     const clientId = getClientIdentifier(request);
-    const rateLimitResult = checkRateLimit(`forgot-password:${clientId}`, RATE_LIMITS.AUTH_PASSWORD_RESET);
+    const rateLimitResult = await checkRateLimit(`forgot-password:${clientId}`, RATE_LIMITS.AUTH_PASSWORD_RESET);
     
     if (!rateLimitResult.allowed) {
       const error = formatApiError('RATE_LIMIT_EXCEEDED');

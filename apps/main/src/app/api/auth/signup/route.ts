@@ -8,8 +8,8 @@ import { z } from 'zod';
 import { prisma, ActorType } from '@lumi/db';
 import { hashPassword, generateSessionToken } from '@/lib/api-auth';
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS } from '@/lib/security/rate-limit';
-import { validateCsrfToken, getCsrfIdentifier } from '@/lib/security/csrf';
-import { sanitizeEmail, sanitizeString } from '@/lib/security/sanitize';
+import { requireCsrfToken } from '@/lib/security/csrf';
+import { sanitizeEmail } from '@/lib/security/sanitize';
 import { formatApiError } from '@/lib/utils/error-messages';
 import { logError } from '@/lib/services/monitoring';
 import { sendEmail, generateEmailVerificationEmail } from '@/lib/services/email';
@@ -21,14 +21,13 @@ export const revalidate = 0;
 const signupSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
-  csrfToken: z.string().optional(), // CSRF token is optional for now (can be made required)
 });
 
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting check
     const clientId = getClientIdentifier(request);
-    const rateLimitResult = checkRateLimit(`signup:${clientId}`, RATE_LIMITS.AUTH_SIGNUP);
+    const rateLimitResult = await checkRateLimit(`signup:${clientId}`, RATE_LIMITS.AUTH_SIGNUP);
     
     if (!rateLimitResult.allowed) {
       return NextResponse.json(
@@ -52,31 +51,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    
+    // Validate CSRF token (required for POST requests)
+    const csrfValidation = requireCsrfToken(request, body);
+    if (!csrfValidation.valid) {
+      return csrfValidation.response!;
+    }
+    
     const parsed = signupSchema.parse(body);
     
     // Sanitize email (password should not be sanitized)
     const email = sanitizeEmail(parsed.email);
     const password = parsed.password; // Don't sanitize passwords
-    
-    // Validate CSRF token if provided (non-blocking for now due to serverless limitations)
-    if (parsed.csrfToken) {
-      const csrfId = getCsrfIdentifier(request);
-      const isValid = validateCsrfToken(csrfId, parsed.csrfToken);
-      
-      if (!isValid) {
-        // Log warning but don't block (CSRF protection is in development)
-        // In-memory stores don't persist across serverless invocations
-        if (process.env.NODE_ENV === 'development') {
-          console.warn('CSRF token validation failed:', {
-            identifier: csrfId,
-            tokenLength: parsed.csrfToken.length,
-            cookiePresent: !!request.cookies.get('csrf-session-id'),
-          });
-        }
-        // For now, allow the request to proceed (will be enforced with Redis in production)
-        // TODO: Implement Redis-based CSRF token storage for production
-      }
-    }
 
     // Check if email already exists
     const existing = await prisma.user.findUnique({

@@ -3,132 +3,206 @@
  * 
  * Provides CSRF token generation and validation to prevent cross-site
  * request forgery attacks.
+ * 
+ * Uses a double-submit cookie pattern that works in serverless environments:
+ * - Token stored in both cookie (httpOnly) and request body/header
+ * - Server compares both values
+ * - Works without shared state (Redis/database)
  */
 
 import crypto from 'crypto';
+import { NextRequest, NextResponse } from 'next/server';
 
-// In-memory store for CSRF tokens (can be upgraded to Redis for distributed systems)
-// Key: sessionId or user identifier
-// Value: Set of valid tokens
-const csrfTokenStore = new Map<string, Set<string>>();
-
-// Clean up expired tokens every 10 minutes
-setInterval(() => {
-  // For now, we keep tokens until they're used or session expires
-  // In production, consider adding expiration times
-}, 10 * 60 * 1000);
+const CSRF_SECRET = process.env.CSRF_SECRET || process.env.SESSION_SECRET || 'change-me-in-production';
+const CSRF_COOKIE_NAME = 'csrf-token';
+const CSRF_HEADER_NAME = 'x-csrf-token';
 
 /**
- * Generate a CSRF token
+ * Generate a signed CSRF token
  */
 export function generateCsrfToken(): string {
-  return crypto.randomBytes(32).toString('hex');
+  const token = crypto.randomBytes(32).toString('hex');
+  return token;
 }
 
 /**
- * Store a CSRF token for a session/user
+ * Sign a CSRF token with HMAC
  */
-export function storeCsrfToken(identifier: string, token: string): void {
-  if (!csrfTokenStore.has(identifier)) {
-    csrfTokenStore.set(identifier, new Set());
-  }
-  csrfTokenStore.get(identifier)!.add(token);
-  
-  // Limit to 10 tokens per identifier to prevent memory issues
-  const tokens = csrfTokenStore.get(identifier)!;
-  if (tokens.size > 10) {
-    const firstToken = tokens.values().next().value;
-    if (firstToken) {
-      tokens.delete(firstToken);
-    }
-  }
+function signToken(token: string): string {
+  const hmac = crypto.createHmac('sha256', CSRF_SECRET);
+  hmac.update(token);
+  return hmac.digest('hex');
 }
 
 /**
- * Validate a CSRF token
+ * Verify a signed CSRF token
  */
-export function validateCsrfToken(identifier: string, token: string): boolean {
-  const tokens = csrfTokenStore.get(identifier);
-  
-  // Debug logging in development
-  if (process.env.NODE_ENV === 'development') {
-    console.log('CSRF validation:', {
-      identifier,
-      hasTokens: !!tokens,
-      tokenCount: tokens?.size || 0,
-      tokenProvided: !!token,
-      tokenLength: token?.length || 0,
-    });
-  }
-  
-  if (!tokens) {
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('CSRF token store empty for identifier:', identifier);
-    }
-    return false;
-  }
-  
-  const isValid = tokens.has(token);
-  if (isValid) {
-    // Remove token after use (one-time use)
-    tokens.delete(token);
-  } else if (process.env.NODE_ENV === 'development') {
-    console.warn('CSRF token not found in store for identifier:', identifier);
-  }
-  
-  return isValid;
+function verifyToken(token: string, signature: string): boolean {
+  const expectedSignature = signToken(token);
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSignature)
+  );
 }
 
 /**
- * Get CSRF token identifier from request
- * Uses cookie-based session ID as primary method (most reliable and consistent)
+ * Set CSRF token in response cookie
  */
-export function getCsrfIdentifier(request: any): string {
-  // For NextRequest, try to get from cookies first (most reliable)
-  if (request?.cookies) {
-    let sessionId: string | undefined;
-    if (typeof request.cookies.get === 'function') {
-      sessionId = request.cookies.get('csrf-session-id')?.value;
-    } else if (request.cookies['csrf-session-id']) {
-      sessionId = request.cookies['csrf-session-id'];
-    }
-    
-    if (sessionId) {
-      // Use session ID as identifier (consistent with token generation)
-      return crypto.createHash('sha256').update(sessionId).digest('hex').substring(0, 16);
-    }
-  }
+export function setCsrfCookie(response: NextResponse, token: string): NextResponse {
+  const signature = signToken(token);
+  const signedToken = `${token}.${signature}`;
+  
+  response.cookies.set(CSRF_COOKIE_NAME, signedToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/',
+    maxAge: 60 * 60 * 24, // 24 hours
+  });
+  
+  return response;
+}
 
-  // If no cookie, this is a new session - return a temporary identifier
-  // This will cause validation to fail, which is expected for new sessions without a token
-  const headers = request?.headers || {};
-  const getHeader = (name: string) => {
-    if (typeof headers.get === 'function') {
-      return headers.get(name);
-    }
-    const lowerName = name.toLowerCase();
-    return headers[lowerName] || headers[name];
-  };
-
-  // For development, use a fallback based on user-agent + accept headers
-  if (process.env.NODE_ENV === 'development') {
-    const userAgent = getHeader('user-agent') || 'unknown';
-    const accept = getHeader('accept') || 'unknown';
-    return crypto.createHash('sha256').update(`dev-${userAgent}-${accept}`).digest('hex').substring(0, 16);
+/**
+ * Get CSRF token from request cookie
+ */
+function getCsrfTokenFromCookie(request: NextRequest): string | null {
+  const cookie = request.cookies.get(CSRF_COOKIE_NAME);
+  if (!cookie?.value) {
+    return null;
   }
   
-  // Production: Fallback to IP address (less ideal but works as fallback)
-  const forwarded = getHeader('x-forwarded-for');
-  const realIp = getHeader('x-real-ip');
-  const cfConnectingIp = getHeader('cf-connecting-ip');
-  const ip = cfConnectingIp || realIp || (forwarded ? (typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : null) : null) || 'unknown';
+  const [token, signature] = cookie.value.split('.');
+  if (!token || !signature) {
+    return null;
+  }
+  
+  if (!verifyToken(token, signature)) {
+    return null;
+  }
+  
+  return token;
+}
+
+/**
+ * Get CSRF token from request header or body
+ */
+function getCsrfTokenFromRequest(request: NextRequest, body?: any): string | null {
+  // Try header first
+  const headerToken = request.headers.get(CSRF_HEADER_NAME);
+  if (headerToken) {
+    return headerToken;
+  }
+  
+  // Try body
+  if (body?.csrfToken) {
+    return body.csrfToken;
+  }
+  
+  return null;
+}
+
+/**
+ * Validate CSRF token using double-submit cookie pattern
+ * 
+ * This works in serverless because:
+ * 1. Cookie is set by server and sent automatically by browser
+ * 2. Token in body/header is set by client JavaScript
+ * 3. Both must match (proves request came from same origin)
+ */
+export function validateCsrfToken(
+  request: NextRequest,
+  body?: any
+): { valid: boolean; error?: string } {
+  const cookieToken = getCsrfTokenFromCookie(request);
+  const requestToken = getCsrfTokenFromRequest(request, body);
+  
+  if (!cookieToken) {
+    return {
+      valid: false,
+      error: 'CSRF token cookie not found. Please refresh the page.',
+    };
+  }
+  
+  if (!requestToken) {
+    return {
+      valid: false,
+      error: 'CSRF token not provided in request. Include it in X-CSRF-Token header or csrfToken field.',
+    };
+  }
+  
+  // Compare tokens (must match exactly)
+  if (cookieToken !== requestToken) {
+    return {
+      valid: false,
+      error: 'CSRF token mismatch. Tokens in cookie and request do not match.',
+    };
+  }
+  
+  return { valid: true };
+}
+
+/**
+ * Get CSRF token identifier from request (for logging/debugging)
+ */
+export function getCsrfIdentifier(request: NextRequest): string {
+  // Try to get from cookie first
+  const cookie = request.cookies.get(CSRF_COOKIE_NAME);
+  if (cookie?.value) {
+    const [token] = cookie.value.split('.');
+    if (token) {
+      return crypto.createHash('sha256').update(token).digest('hex').substring(0, 16);
+    }
+  }
+  
+  // Fallback to IP-based identifier
+  const headers = request.headers;
+  const forwarded = headers.get('x-forwarded-for');
+  const realIp = headers.get('x-real-ip');
+  const cfConnectingIp = headers.get('cf-connecting-ip');
+  const ip = cfConnectingIp || realIp || (forwarded ? forwarded.split(',')[0].trim() : null) || 'unknown';
   
   return crypto.createHash('sha256').update(ip).digest('hex').substring(0, 16);
 }
 
 /**
- * Clear CSRF tokens for an identifier (e.g., on logout)
+ * Clear CSRF token cookie (e.g., on logout)
  */
-export function clearCsrfTokens(identifier: string): void {
-  csrfTokenStore.delete(identifier);
+export function clearCsrfCookie(response: NextResponse): NextResponse {
+  response.cookies.delete(CSRF_COOKIE_NAME);
+  return response;
+}
+
+/**
+ * Middleware helper to require CSRF token for state-changing requests
+ */
+export function requireCsrfToken(
+  request: NextRequest,
+  body?: any
+): { valid: boolean; response?: NextResponse } {
+  // Only require CSRF for state-changing methods
+  const stateChangingMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
+  if (!stateChangingMethods.includes(request.method)) {
+    return { valid: true };
+  }
+  
+  const validation = validateCsrfToken(request, body);
+  
+  if (!validation.valid) {
+    return {
+      valid: false,
+      response: NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'CSRF_TOKEN_INVALID',
+            message: validation.error || 'CSRF token validation failed',
+          },
+        },
+        { status: 403 }
+      ),
+    };
+  }
+  
+  return { valid: true };
 }
