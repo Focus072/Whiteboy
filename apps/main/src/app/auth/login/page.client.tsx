@@ -61,11 +61,11 @@ export default function LoginPageClient() {
         const userData = await userResponse.json();
         const userRole = userData.data?.role;
         
-        // Redirect based on role: Admin → /admin, Customer → /products
+        // Redirect based on role: Admin → /admin, Customer → / (landing page)
         if (userRole === 'ADMIN' || userRole === 'FULFILLMENT' || userRole === 'READ_ONLY') {
           router.push('/admin');
         } else {
-          router.push('/products');
+          router.push('/');
         }
       } else {
         setError(data.error?.message || 'Login failed');
