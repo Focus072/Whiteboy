@@ -38,12 +38,12 @@ export default function LoginPageClient() {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(csrfToken && { 'X-CSRF-Token': csrfToken }),
+        },
         credentials: 'include', // Include cookies for CSRF validation
-        body: JSON.stringify({
-          ...formData,
-          ...(csrfToken && { csrfToken }),
-        }),
+        body: JSON.stringify(formData),
       });
 
       const data = await response.json();
