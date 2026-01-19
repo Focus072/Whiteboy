@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useCart } from '@/lib/cart';
 import { createOrder, createAddress, type ApiResponse } from '@/lib/api';
 import FormField from '@/components/FormField';
+import CustomerHeader from '@/components/CustomerHeader';
 import { validationRules } from '@/lib/utils/form-validation';
 
 const US_STATES = [
@@ -213,26 +214,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">Lumi</h1>
-            <Link
-              href="/cart"
-              className="px-4 py-2 text-gray-700 hover:text-gray-900"
-            >
-              Back to Cart
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      {/* Age Warning */}
-      <div className="bg-red-600 text-white py-2">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm font-semibold">
-          ⚠️ 21+ ONLY - Adult signature required at delivery
-        </div>
-      </div>
+      <CustomerHeader />
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Checkout</h2>

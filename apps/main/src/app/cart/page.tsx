@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useCart } from '@/lib/cart';
+import CustomerHeader from '@/components/CustomerHeader';
 
 export default function CartPage() {
   const router = useRouter();
@@ -11,26 +12,14 @@ export default function CartPage() {
   if (items.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <header className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex justify-between items-center">
-              <h1 className="text-2xl font-bold text-gray-900">Lumi</h1>
-              <Link
-                href="/"
-                className="px-4 py-2 text-gray-700 hover:text-gray-900"
-              >
-                Continue Shopping
-              </Link>
-            </div>
-          </div>
-        </header>
+        <CustomerHeader />
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Your cart is empty</h2>
             <Link
-              href="/"
-              className="inline-block px-6 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+              href="/home"
+              className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-colors"
             >
               Continue Shopping
             </Link>
@@ -42,19 +31,7 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">Lumi</h1>
-            <Link
-              href="/"
-              className="px-4 py-2 text-gray-700 hover:text-gray-900"
-            >
-              Continue Shopping
-            </Link>
-          </div>
-        </div>
-      </header>
+      <CustomerHeader />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Shopping Cart</h2>
