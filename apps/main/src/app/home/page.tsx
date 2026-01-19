@@ -52,52 +52,81 @@ export default function LandingPage() {
       </div>
 
       {/* Header */}
-      <header className="bg-black text-gray-300 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Main Navigation */}
-          <div className="flex justify-between items-center py-4 border-b border-gray-800">
-            <Link href="/home" className="text-3xl font-bold text-white">
-              LUMI
-            </Link>
-            <nav className="hidden md:flex items-center space-x-8">
-              <Link href="/home" className="text-white hover:text-gray-300 font-medium underline">
-                Home
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-col space-y-4">
+            {/* Top row: Logo and Account/Cart */}
+            <div className="flex justify-between items-center">
+              <Link href="/home" className="text-3xl font-bold text-gray-900">
+                LUMI
               </Link>
-              <Link href="/products" className="text-gray-300 hover:text-white font-medium">
-                Our Flavors
-              </Link>
-              <Link href="/products?category=incoming" className="text-gray-300 hover:text-white font-medium">
-                Incoming Drops
-              </Link>
-              <Link href="/reviews" className="text-gray-300 hover:text-white font-medium">
-                Customer Reviews
-              </Link>
-              <Link href="/contact" className="text-gray-300 hover:text-white font-medium">
-                Contact
-              </Link>
-              <Link href="/wholesale" className="text-gray-300 hover:text-white font-medium">
-                Wholesale Application
-              </Link>
-            </nav>
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/cart"
-                className="bg-blue-600 text-white px-4 py-2 rounded-md font-medium hover:bg-blue-700 transition-colors"
-              >
-                CART
-              </Link>
-              <button className="md:hidden text-gray-300">
+              <div className="hidden md:flex items-center space-x-6">
+                <Link href="/account" className="text-gray-700 hover:text-gray-900 font-medium">
+                  ACCOUNT
+                </Link>
+                <Link
+                  href="/cart"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md font-medium hover:bg-blue-700 transition-colors"
+                >
+                  CART
+                </Link>
+              </div>
+              <button className="md:hidden text-gray-700">
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
             </div>
-          </div>
-          {/* SALE Banner */}
-          <div className="py-2">
-            <Link href="/products?sale=true" className="text-gray-300 hover:text-white font-medium">
-              SALE
-            </Link>
+
+            {/* Navigation Bar */}
+            <nav className="hidden md:flex items-center space-x-8 border-t border-gray-200 pt-4">
+              <Link 
+                href="/home" 
+                className="text-gray-700 hover:text-blue-600 font-medium transition-colors border-b-2 border-blue-600 pb-1"
+              >
+                HOME
+              </Link>
+              <Link 
+                href="/products" 
+                className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+              >
+                OUR FLAVORS
+              </Link>
+              <Link 
+                href="/coming-soon" 
+                className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+              >
+                INCOMING DROPS
+              </Link>
+              <Link 
+                href="/reviews" 
+                className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+              >
+                CUSTOMER REVIEWS
+              </Link>
+              <Link 
+                href="/contact" 
+                className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+              >
+                CONTACT
+              </Link>
+              <Link 
+                href="/wholesale" 
+                className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+              >
+                WHOLESALE APPLICATION
+              </Link>
+            </nav>
+
+            {/* SALE Banner */}
+            <div className="hidden md:block border-t border-gray-200 pt-2">
+              <Link 
+                href="/products?sale=true" 
+                className="text-red-600 hover:text-red-700 font-bold text-sm transition-colors"
+              >
+                SALE
+              </Link>
+            </div>
           </div>
         </div>
       </header>
